@@ -5,21 +5,29 @@ use thiserror::Error;
 
 use crate::codec::Codec;
 
+/// Least-significant bit (LSB) steganography encodes data in the least-significant bits of colors
+/// in an image. This implementation reduces the colors in the carrier (irreversibly) in order to
+/// allow a byte of data to fit in each pixel of the image. 3 bits of data are encoded per pixel,
+/// and the 9th bit is used to signal the end of data.
 #[derive(Debug)]
-pub struct ChampleveCodec;
+pub struct LsbCodec;
 
-impl Codec for ChampleveCodec {
+impl Codec for LsbCodec {
     type Carrier = DynamicImage;
     type Payload = Vec<u8>;
     type Output = Self::Carrier;
-    type Error = ChampleveError;
+    type Error = LsbError;
 
-    fn encode(&self, carrier: impl Into<Self::Carrier>, payload: impl Into<Self::Payload>) -> Result<Self::Output, Self::Error> {
+    fn encode<C, P>(&self, carrier: C, payload: P) -> Result<Self::Output, Self::Error>
+    where
+        C: Into<Self::Carrier>,
+        P: Into<Self::Payload>,
+    {
         let mut image: DynamicImage = carrier.into();
         let payload: Vec<u8> = payload.into();
 
         if image.pixels().count() < payload.len() {
-            return Err(ChampleveError::PayloadTooBig);
+            return Err(LsbError::PayloadTooBig);
         }
 
         let mut payload_iter = payload.iter();
@@ -43,13 +51,16 @@ impl Codec for ChampleveCodec {
                     }
                 }
             },
-            _ => return Err(ChampleveError::UnsupportedFormat { format: image.color() })
+            _ => return Err(LsbError::UnsupportedFormat { format: image.color() })
         }
 
         Ok(image)
     }
 
-    fn decode(&self, carrier: impl Into<Self::Output>) -> Result<(Self::Carrier, Self::Payload), ChampleveError> {
+    fn decode<E>(&self, carrier: E) -> Result<(Self::Carrier, Self::Payload), LsbError>
+    where
+        E: Into<Self::Output>,
+    {
         let mut image: DynamicImage = carrier.into();
         let mut payload: Vec<u8> = Vec::new();
 
@@ -72,7 +83,7 @@ impl Codec for ChampleveCodec {
                     }
                 }
             },
-            _ => return Err(ChampleveError::UnsupportedFormat { format: image.color() })
+            _ => return Err(LsbError::UnsupportedFormat { format: image.color() })
         }
         
         Ok((image, payload))
@@ -128,12 +139,18 @@ fn decode_pixel<P: Pixel<Subpixel = u8>>(pixel: &mut P) -> Option<u8> {
     Some(payload_byte)
 }
 
+/// Errors thrown by the LSB Codec.
 #[derive(Error, Debug)]
-pub enum ChampleveError {
+pub enum LsbError {
+
+    /// Error thrown when payload is too big for the carrier.
     #[error("Payload is too big for the carrier. Choose a smaller payload or an image with greater pixel dimensions.")]
     PayloadTooBig,
+
+    /// Error thrown when pixel format is unsupported.
     #[error("Specified image format ({format:?}) is unsupported.")]
     UnsupportedFormat {
+        /// Provided (invalid) format.
         format: ColorType
     },
 }

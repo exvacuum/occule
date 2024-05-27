@@ -5,8 +5,11 @@ use thiserror::Error;
 
 use crate::codec::Codec;
 
+/// Codec for storing payload data in JPEG comment (COM) segments. Can store an arbitrary amount of
+/// data, as long as the number of comment segments does not exceed u64::MAX.
 #[derive(Debug, PartialEq, Eq)]
 pub struct JpegSegmentCodec {
+    /// Index of segment to insert comments at.
     pub start_index: usize,
 }
 
@@ -16,7 +19,11 @@ impl Codec for JpegSegmentCodec {
     type Output = Self::Carrier;
     type Error = JpegSegmentError;
 
-    fn encode(&self, carrier: impl Into<Self::Carrier>, payload: impl Into<Self::Payload>) -> Result<Self::Output, Self::Error> {
+    fn encode<C, P>(&self, carrier: C, payload: P) -> Result<Self::Output, Self::Error>
+    where
+        C: Into<Self::Carrier>,
+        P: Into<Self::Payload>,
+    {
         let mut jpeg = match Jpeg::from_bytes(carrier.into().into()) {
             Ok(image) => image,
             Err(err) => return Err(JpegSegmentError::ParseFailed { inner: err })
@@ -31,7 +38,10 @@ impl Codec for JpegSegmentCodec {
         Ok(jpeg.encoder().bytes().to_vec())
     }
 
-    fn decode(&self, encoded: impl Into<Self::Output>) -> Result<(Self::Carrier, Self::Payload), Self::Error> {
+    fn decode<E>(&self, encoded: E) -> Result<(Self::Carrier, Self::Payload), Self::Error>
+    where
+        E: Into<Self::Output>,
+    {
         let mut jpeg = match Jpeg::from_bytes(encoded.into().into()) {
             Ok(image) => image,
             Err(err) => return Err(JpegSegmentError::ParseFailed { inner: err })
@@ -59,8 +69,13 @@ impl Default for JpegSegmentCodec {
     }
 }
 
+/// Errors thrown by the JPEG segment codec.
 #[derive(Error, Debug)]
 pub enum JpegSegmentError {
+    /// Parsing JPEG data failed.
     #[error("Failed to parse JPEG data: {inner:?}")]
-    ParseFailed { inner: img_parts::Error }
+    ParseFailed { 
+        /// Error thrown by parser.
+        inner: img_parts::Error,
+    }
 }

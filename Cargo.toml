@@ -4,13 +4,17 @@ version = "0.1.0"
 edition = "2021"
 
 [features]
-default = ["jpg", "png", "lossless"]
-jpg = []
-png = []
-lossless = []
+default = ["jpeg", "lossless"]
+jpeg = ["dep:img-parts"]
+lossless = ["dep:image"]
 
 [dependencies]
-colored = "2.1.0"
-image = "0.24"
-img-parts = "0.3.0"
 thiserror = "1.0.61"
+
+[dependencies.img-parts]
+version = "0.3.0"
+optional = true
+
+[dependencies.image]
+version = "0.24"
+optional = true
