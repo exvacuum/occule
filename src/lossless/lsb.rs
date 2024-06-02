@@ -1,33 +1,25 @@
-use std::cmp::Ordering;
+use std::{cmp::Ordering, io::{BufWriter, Cursor}};
 
-use image::{ColorType, DynamicImage, GenericImageView, Pixel};
-use thiserror::Error;
+use image::{DynamicImage, GenericImageView, Pixel};
 
-use crate::codec::Codec;
+use crate::{codec::Codec, CodecError};
 
 /// Least-significant bit (LSB) steganography encodes data in the least-significant bits of colors
 /// in an image. This implementation reduces the colors in the carrier (irreversibly) in order to
 /// allow a byte of data to fit in each pixel of the image. 3 bits of data are encoded per pixel,
 /// and the 9th bit is used to signal the end of data.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct LsbCodec;
 
 impl Codec for LsbCodec {
-    type Carrier = DynamicImage;
-    type Payload = Vec<u8>;
-    type Output = Self::Carrier;
-    type Error = LsbError;
-
-    fn encode<C, P>(&self, carrier: C, payload: P) -> Result<Self::Output, Self::Error>
-    where
-        C: Into<Self::Carrier>,
-        P: Into<Self::Payload>,
+    fn encode(&self, carrier: &[u8], payload: &[u8]) -> Result<Vec<u8>, CodecError>
     {
-        let mut image: DynamicImage = carrier.into();
-        let payload: Vec<u8> = payload.into();
+        let image_format = image::guess_format(carrier.into()).unwrap();
+        let mut image: DynamicImage = image::load_from_memory(carrier.into()).unwrap();
+        let payload: &[u8] = payload.into();
 
         if image.pixels().count() < payload.len() {
-            return Err(LsbError::PayloadTooBig);
+            return Err(CodecError::DataInvalid("Payload Too Big for Carrier".into()));
         }
 
         let mut payload_iter = payload.iter();
@@ -51,17 +43,20 @@ impl Codec for LsbCodec {
                     }
                 }
             },
-            _ => return Err(LsbError::UnsupportedFormat { format: image.color() })
+            _ => return Err(CodecError::DataInvalid("Unsupported Image Color Format".into()))
         }
 
-        Ok(image)
+        let mut buf = BufWriter::new(Cursor::new(Vec::<u8>::new()));
+        if let Err(e) = image.write_to(&mut buf, image_format) {
+            return Err(CodecError::DependencyError(e.to_string()))
+        }
+        Ok(buf.into_inner().unwrap().into_inner())
     }
 
-    fn decode<E>(&self, carrier: E) -> Result<(Self::Carrier, Self::Payload), LsbError>
-    where
-        E: Into<Self::Output>,
+    fn decode(&self, carrier: &[u8]) -> Result<(Vec<u8>, Vec<u8>), CodecError>
     {
-        let mut image: DynamicImage = carrier.into();
+        let image_format = image::guess_format(carrier.into()).unwrap();
+        let mut image: DynamicImage = image::load_from_memory(carrier.into()).unwrap();
         let mut payload: Vec<u8> = Vec::new();
 
         match image {
@@ -83,10 +78,14 @@ impl Codec for LsbCodec {
                     }
                 }
             },
-            _ => return Err(LsbError::UnsupportedFormat { format: image.color() })
+            _ => return Err(CodecError::DataInvalid("Unsupported Image Color Format".into()))
         }
         
-        Ok((image, payload))
+        let mut buf = BufWriter::new(Cursor::new(Vec::<u8>::new()));
+        if let Err(e) = image.write_to(&mut buf, image_format) {
+            return Err(CodecError::DependencyError(e.to_string()))
+        }
+        Ok((buf.into_inner().unwrap().into_inner(), payload))
     }
 }
 
@@ -137,20 +136,4 @@ fn decode_pixel<P: Pixel<Subpixel = u8>>(pixel: &mut P) -> Option<u8> {
         payload_byte |= mask;
     }
     Some(payload_byte)
-}
-
-/// Errors thrown by the LSB Codec.
-#[derive(Error, Debug)]
-pub enum LsbError {
-
-    /// Error thrown when payload is too big for the carrier.
-    #[error("Payload is too big for the carrier. Choose a smaller payload or an image with greater pixel dimensions.")]
-    PayloadTooBig,
-
-    /// Error thrown when pixel format is unsupported.
-    #[error("Specified image format ({format:?}) is unsupported.")]
-    UnsupportedFormat {
-        /// Provided (invalid) format.
-        format: ColorType
-    },
 }

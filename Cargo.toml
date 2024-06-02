@@ -1,6 +1,6 @@
 [package]
 name = "occule"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 
 [features]
@@ -9,7 +9,7 @@ jpeg = ["dep:img-parts"]
 lossless = ["dep:image"]
 
 [dependencies]
-thiserror = "1.0.61"
+thiserror = "^1.0"
 
 [dependencies.img-parts]
 version = "0.3.0"
