@@ -14,9 +14,9 @@ pub struct LsbCodec;
 impl Codec for LsbCodec {
     fn encode(&self, carrier: &[u8], payload: &[u8]) -> Result<Vec<u8>, CodecError>
     {
-        let image_format = image::guess_format(carrier.into()).unwrap();
-        let mut image: DynamicImage = image::load_from_memory(carrier.into()).unwrap();
-        let payload: &[u8] = payload.into();
+        let image_format = image::guess_format(carrier).unwrap();
+        let mut image: DynamicImage = image::load_from_memory(carrier).unwrap();
+        let payload: &[u8] = payload;
 
         if image.pixels().count() < payload.len() {
             return Err(CodecError::DataInvalid("Payload Too Big for Carrier".into()));
@@ -55,8 +55,8 @@ impl Codec for LsbCodec {
 
     fn decode(&self, carrier: &[u8]) -> Result<(Vec<u8>, Vec<u8>), CodecError>
     {
-        let image_format = image::guess_format(carrier.into()).unwrap();
-        let mut image: DynamicImage = image::load_from_memory(carrier.into()).unwrap();
+        let image_format = image::guess_format(carrier).unwrap();
+        let mut image: DynamicImage = image::load_from_memory(carrier).unwrap();
         let mut payload: Vec<u8> = Vec::new();
 
         match image {
