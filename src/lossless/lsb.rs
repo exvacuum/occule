@@ -2,7 +2,7 @@ use std::{cmp::Ordering, io::{BufWriter, Cursor}};
 
 use image::{DynamicImage, GenericImageView, Pixel};
 
-use crate::{codec::Codec, CodecError};
+use crate::{codec::Codec, Error};
 
 /// Least-significant bit (LSB) steganography encodes data in the least-significant bits of colors
 /// in an image. This implementation reduces the colors in the carrier (irreversibly) in order to
@@ -12,14 +12,14 @@ use crate::{codec::Codec, CodecError};
 pub struct LsbCodec;
 
 impl Codec for LsbCodec {
-    fn encode(&self, carrier: &[u8], payload: &[u8]) -> Result<Vec<u8>, CodecError>
+    fn encode(&self, carrier: &[u8], payload: &[u8]) -> Result<Vec<u8>, Error>
     {
         let image_format = image::guess_format(carrier).unwrap();
         let mut image: DynamicImage = image::load_from_memory(carrier).unwrap();
         let payload: &[u8] = payload;
 
         if image.pixels().count() < payload.len() {
-            return Err(CodecError::DataInvalid("Payload Too Big for Carrier".into()));
+            return Err(Error::DataInvalid("Payload Too Big for Carrier".into()));
         }
 
         let mut payload_iter = payload.iter();
@@ -43,17 +43,17 @@ impl Codec for LsbCodec {
                     }
                 }
             },
-            _ => return Err(CodecError::DataInvalid("Unsupported Image Color Format".into()))
+            _ => return Err(Error::DataInvalid("Unsupported Image Color Format".into()))
         }
 
         let mut buf = BufWriter::new(Cursor::new(Vec::<u8>::new()));
         if let Err(e) = image.write_to(&mut buf, image_format) {
-            return Err(CodecError::DependencyError(e.to_string()))
+            return Err(Error::DependencyError(e.to_string()))
         }
         Ok(buf.into_inner().unwrap().into_inner())
     }
 
-    fn decode(&self, carrier: &[u8]) -> Result<(Vec<u8>, Vec<u8>), CodecError>
+    fn decode(&self, carrier: &[u8]) -> Result<(Vec<u8>, Vec<u8>), Error>
     {
         let image_format = image::guess_format(carrier).unwrap();
         let mut image: DynamicImage = image::load_from_memory(carrier).unwrap();
@@ -78,12 +78,12 @@ impl Codec for LsbCodec {
                     }
                 }
             },
-            _ => return Err(CodecError::DataInvalid("Unsupported Image Color Format".into()))
+            _ => return Err(Error::DataInvalid("Unsupported Image Color Format".into()))
         }
         
         let mut buf = BufWriter::new(Cursor::new(Vec::<u8>::new()));
         if let Err(e) = image.write_to(&mut buf, image_format) {
-            return Err(CodecError::DependencyError(e.to_string()))
+            return Err(Error::DependencyError(e.to_string()))
         }
         Ok((buf.into_inner().unwrap().into_inner(), payload))
     }

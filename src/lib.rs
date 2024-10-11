@@ -13,3 +13,15 @@ pub mod jpeg;
 /// Codecs for carriers in lossless image formats (PNG, WebP, etc.).
 #[cfg(feature = "lossless")]
 pub mod lossless;
+
+/// Codecs for carriers in gltf model format.
+#[cfg(feature = "gltf")]
+pub mod gltf;
+
+/// Codecs for binary files.
+#[cfg(feature = "bin")]
+pub mod binary;
+
+/// Codecs for wav files
+#[cfg(feature = "wav")]
+pub mod wav;
