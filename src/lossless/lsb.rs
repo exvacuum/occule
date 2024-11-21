@@ -8,7 +8,7 @@ use crate::{codec::Codec, Error};
 /// in an image. This implementation reduces the colors in the carrier (irreversibly) in order to
 /// allow a byte of data to fit in each pixel of the image. 3 bits of data are encoded per pixel,
 /// and the 9th bit is used to signal the end of data.
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct LsbCodec;
 
 impl Codec for LsbCodec {

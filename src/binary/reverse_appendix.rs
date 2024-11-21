@@ -3,6 +3,7 @@ use crate::{Codec, Error};
 /// Reverses payload binary data and writes it ass-first past the end of the original data. A
 /// length marker is also prepended to the payload *before reversing* so the decoder knows how long
 /// the payload is.
+#[derive(Clone, Debug)]
 pub struct BinaryReverseAppendixCodec;
 
 impl Codec for BinaryReverseAppendixCodec {

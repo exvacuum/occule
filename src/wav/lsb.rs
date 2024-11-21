@@ -8,6 +8,7 @@ use num_traits::{FromBytes, ToBytes};
 
 /// A Least-Significant Bit (LSB) Codec for WAV files. Stores 1 bit of payload data in each sample
 /// of a WAV file. Supported sample formats are 8, 16, and 32-bit PCM, and 32-bit float.
+#[derive(Clone, Debug)]
 pub struct LsbCodec;
 
 impl Codec for LsbCodec {

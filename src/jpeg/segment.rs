@@ -6,7 +6,7 @@ use crate::{codec::Codec, Error};
 
 /// Codec for storing payload data in JPEG comment (COM) segments. Can store an arbitrary amount of
 /// data, as long as the number of comment segments does not exceed u64::MAX.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct JpegSegmentCodec {
     /// Index of segment to insert comments at.
     pub start_index: usize,

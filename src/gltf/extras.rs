@@ -8,7 +8,7 @@ use crate::{Codec, Error};
 
 /// Codec for embedding data in a GLTF file "extras" entry. It uses the extras entry in the first
 /// scene in the file and stores the data as base64.
-#[derive(Default)]
+#[derive(Clone, Debug, Default)]
 pub struct ExtrasEntryCodec;
 
 impl Codec for ExtrasEntryCodec {
