@@ -1,6 +1,6 @@
 [package]
 name = "occule"
-version = "0.3.0"
+version = "0.3.1"
 edition = "2021"
 
 [features]
@@ -13,7 +13,7 @@ wav = ["dep:hound"]
 
 [dependencies]
 base64 = "0.22"
-thiserror = "1.0"
+thiserror = "2.0"
 itertools = "0.13"
 num-traits = "0.2"
 
